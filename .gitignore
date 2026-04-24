@@ -1,0 +1,17 @@
+# Ignore massive datasets and raw files
+*.csv
+*.trop.zip
+*.xlsx
+*.txt
+*sequences.npy
+*targets.npy
+*testpred_scaled.npy
+test_indices.npy
+*.png
+*.jpg
+
+# Ignore Python cache and environment stuff
+__pycache__/
+.env
+.venv/
+env/
