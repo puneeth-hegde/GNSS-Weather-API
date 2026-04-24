@@ -15,4 +15,4 @@ __pycache__/
 .env
 .venv/
 env/
-/Data_preprocessing_eda
+Data_preprocessing_eda/
