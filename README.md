@@ -1,8 +1,19 @@
 # GNSS Weather Prediction API
 
+## Deployed on HuggingFace Spaces
+
+This project is live and publicly accessible on **HuggingFace Spaces**, containerised with Docker and running on a CPU-only instance.
+
+**Space URL:** https://huggingface.co/spaces/puneeth2025/gnss-weather-api
+
+The full stack — FastAPI application, all three SavedModel folders, and the scalers — is packaged into a Docker image and deployed there. HuggingFace Spaces builds the image from the `Dockerfile` in this repository and serves the API on port 7860. No GPU is used; the models were explicitly exported as CPU-safe SavedModel format to match this environment.
+
+---
+
 ## Live Demo
 
-Test the live API endpoint:
+Test the live API endpoint directly:
+
 `GET https://puneeth2025-gnss-weather-api.hf.space/predict/demo-storm`
 
 Example response:
