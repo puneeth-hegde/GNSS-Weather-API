@@ -1,8 +1,13 @@
+
+
 # GNSS Weather Prediction API
+
+**Deployment Status: Live & Publicly Accessible**
+The complete inference pipeline is actively hosted and served via **Hugging Face Spaces**. The backend is fully public and ready to process requests.
 
 ## Live Demo
 
-Test the live API endpoint:
+Test the live API endpoint directly from your browser or via curl:
 `GET https://puneeth2025-gnss-weather-api.hf.space/predict/demo-storm`
 
 Example response:
@@ -380,7 +385,7 @@ Then call:
 ## Known Practical Constraints
 
 1. The API currently uses a fixed demo tensor. Real-time ingestion from live GNSS and NASA feeds is not yet implemented.
-2. `feature_scaler.gz` is not used inside `live_inference.py`. Any real-time pipeline must scale incoming raw sensor data using this scaler before passing it to `predict_rain()`.
+2. `feature_scaler.gz` is not used inside `live_inference.py`. Any real-time pipeline must scale incoming raw sensor data before passing it to `predict_rain()`.
 3. The TFT architecture was only used for Stage 1 classification. The Stage 2 regressor in the deployed stack is CNN-only.
 
 ---
