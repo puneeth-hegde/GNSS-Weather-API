@@ -1,154 +1,239 @@
-# Atmospheric Data Analysis for Precipitation Forecasting
-### IISC Bangalore Station | 2010 – 2025
+# GNSS Weather Prediction
 
-A data analytics project built on 15 years of hourly atmospheric 
-observations from the Indian Institute of Science (IISC) weather 
-station in Bangalore, India. The project covers the full data 
-pipeline — from raw multi-source ingestion and cleaning, through 
-feature engineering, to exploratory data analysis — producing a 
-structured, analysis-ready dataset for precipitation forecasting.
+## What This Project Is
 
----
+This repository is your end-to-end weather intelligence pipeline for forecasting rainfall at IISC Bangalore using GNSS-derived atmospheric signals and standard meteorological variables.
 
-## Project Overview
+You built the project in five connected layers:
 
-This project integrates two independent atmospheric data sources 
-into a single clean master dataset of 134,715 hourly observations 
-spanning 2010 to 2025. The core analytical question is whether 
-tropospheric moisture measurements, combined with standard surface 
-meteorological variables, carry enough signal to forecast 
-precipitation six hours ahead.
+1. Multi-source data ingestion and cleaning (2010-2025)
+2. Feature engineering and sequence creation for time-series learning
+3. Two-stage deep learning training (rain occurrence + rain amount)
+4. Model compatibility repair/export for reliable deployment
+5. Production-style inference API and deployable artifacts
 
-The project stops at the data analytics boundary — the final 
-deliverable is a thoroughly analysed, well-documented, 
-feature-engineered dataset ready for any downstream modelling task.
+In short, this is not only EDA. It is a complete data-to-serving ML workflow.
 
----
+## Problem Statement
 
-## Data Sources
+Given the most recent 48 hours of atmospheric context, predict precipitation 6 hours ahead.
 
-**Source 1 — NASA POWER (MERRA-2 Reanalysis)**
+You split this into two tasks:
 
-Hourly surface meteorological data downloaded for IISC Bangalore 
-coordinates (13.01N, 77.56E) for the period 2010 to 2025. 
-Provides temperature, relative humidity, surface pressure, and 
-precipitation at hourly resolution as a single CSV file.
+1. Stage 1 classification: Will it rain or not?
+2. Stage 2 regression: If rain is expected, how much rain (mm/hr)?
 
-**Source 2 — Nevada Geodetic Laboratory (NGL)**
+This two-stage setup handles rainfall sparsity better than a single direct regressor.
 
-Tropospheric delay estimates processed from raw satellite 
-observation data at the IISC station. Delivered as one ZIP archive 
-per year, each containing daily compressed files in SINEX/TRO 
-format at 5-minute sampling intervals. Provides Zenith Total Delay 
-(ZTD) and Precipitable Water Vapour (PWV).
+## Data Sources and Coverage
 
----
+### 1. NASA POWER hourly data
 
-## Dataset
+- Temperature at 2 m
+- Relative humidity at 2 m
+- Surface pressure
+- Precipitation
 
-| Property              | Value                                      |
-|-----------------------|--------------------------------------------|
-| Date range            | 2010-01-05 to 2025-12-31                   |
-| Total rows            | 134,715 hourly observations                |
-| Input features        | 13                                         |
-| Target variable       | Precipitation (mm/hr)                      |
-| Overall coverage      | 96.1% of the 15-year period                |
-| Missing values        | 0 (after gap filling)                      |
-| Zero-rain hours       | 65,207 (48.4%)                             |
-| Rainy hours           | 69,508 (51.6%)                             |
-| Max hourly precip     | 30.61 mm/hr                                |
+### 2. NGL GNSS troposphere data (IISC station)
 
----
+- Zenith Total Delay (ZTD)
+- Precipitable Water Vapor (PWV)
+- Raw format: yearly `.zip` files containing daily `.trop.gz` files (5-minute records)
 
-## Features
+### Final integrated dataset characteristics
 
-**From NASA POWER**
-- Temperature at 2 metres (C)
-- Relative Humidity at 2 metres (%)
-- Surface Pressure (kPa)
-- Precipitation (mm/hr) — target variable
+- Coverage window: 2010 to 2025
+- Master hourly dataset: 134,715 rows (from notebook output)
+- Final model feature count: 13
+- Target: hourly precipitation (mm/hr)
 
-**From NGL Satellite Data**
-- Zenith Total Delay — ZTD (mm)
-- Precipitable Water Vapour — PWV (mm)
+## Features Used By Models
 
-**Engineered Features**
-- Cyclic hour encoding — hour_sin, hour_cos
-- Cyclic month encoding — month_sin, month_cos
-- Precipitation lag features — Lag 1hr, Lag 3hr, Lag 6hr, Lag 24hr
+### Physical features
 
----
+- `Temperature_C`
+- `Relative_Humidity`
+- `Surface_Pressure_kPa`
+- `ZTD`
+- `PWV`
 
-## Data Pipeline
+### Time encoding features
 
-The raw data from both sources arrives in incompatible formats and 
-resolutions. The pipeline handles the following steps in order:
+- `hour_sin`, `hour_cos`
+- `month_sin`, `month_cos`
 
-1. Parse NGL yearly ZIP archives with double decompression
-2. Extract ZTD and PWV from SINEX format files
-3. Convert proprietary epoch format to standard datetime
-4. Apply physical sanity bounds to filter bad sensor readings
-5. Resample 5-minute NGL data to hourly means
-6. Load NASA POWER CSV, skip metadata header, fix units
-7. Convert precipitation from mm/day to mm/hr
-8. Merge both sources on Datetime using inner join
-9. Reindex to continuous hourly timeline to expose hidden gaps
-10. Fill short gaps by linear interpolation
-11. Fill medium gaps by forward fill
-12. Fill precipitation gaps with zero
-13. Drop rows with gaps exceeding 24 hours
-14. Engineer cyclic time features and lag features
+### Rain persistence (lag) features
 
----
+- `Precipitation_Lag1`
+- `Precipitation_Lag3`
+- `Precipitation_Lag6`
+- `Precipitation_Lag24`
 
-## Exploratory Data Analysis
+### Target
 
-The EDA notebook covers the following:
+- `Precipitation_mm`
 
-- Target variable distribution — extreme skew toward light rain,
-  48.4% zero values, intensity bucket breakdown
-- Feature distributions — all six physical variables
-- 15-year time series — daily aggregations with monsoon seasons
-  highlighted
-- Monthly climatology — seasonal patterns in temperature, humidity,
-  PWV, and precipitation across all 12 months
-- Diurnal cycle — hourly patterns showing afternoon convection peak
-- ZTD and PWV analysis — physical relationship with precipitation,
-  dry vs rainy hour distributions, boxplot comparison
-- Correlation analysis — full Pearson matrix and feature-target
-  correlation ranking
-- Cyclic encoding rationale — visual demonstration of why raw hour
-  and month numbers are incorrect for neural network input
-- Lag feature analysis — scatter plots and correlation values
-  showing temporal persistence of rainfall
-- Data coverage — yearly coverage percentages, month-by-year
-  heatmap showing all gaps across 15 years
-- Monsoon vs non-monsoon comparison — distribution shifts in key
-  variables between seasons
-- PWV rise before rain — composited average of 300+ independent
-  rain onset events showing moisture buildup 6-12 hours before rain
+## End-to-End Pipeline You Implemented
 
----
+### Step 1: Build master dataset
 
-## Key Findings
+Implemented in notebook workflow under `training_scripts_and notebooks/creating_data.ipynb`:
 
-- PWV is on average 12-15 mm higher in the hours immediately before
-  rain compared to dry hours, confirming it as the strongest
-  physical predictor in the dataset
-- Precipitation lag features carry the highest correlation with the
-  target variable, capturing the temporal persistence of weather
-  systems
-- Rainfall is strongly concentrated in June to September, with July
-  and August accounting for the majority of annual totals
-- The afternoon hours between 14:00 and 17:00 LST show the highest
-  rain frequency, consistent with convective rainfall driven by
-  daytime heating
-- Surface pressure operates in a very narrow band due to Bangalore's
-  fixed elevation of 841 metres, limiting its discriminative power
-- The dataset has extreme class imbalance in rainfall intensity —
-  the top 1% of rain events account for a disproportionate share
-  of total precipitation volume
+- Read yearly NGL zip bundles and decompress nested `.trop.gz` files
+- Parse `+TROP/SOLUTION` blocks for IISC records
+- Convert epoch format (`YY:DOY:SSSSS`) to timestamps
+- Apply physical sanity bounds for ZTD/PWV
+- Resample GNSS 5-minute measurements to hourly
+- Load NASA POWER hourly CSV and align units
+- Merge GNSS + NASA streams on datetime
+- Fill short/medium gaps and finalize a continuous hourly dataset
+- Generate cyclic and lag features
 
----
+### Step 2: Prepare supervised sequences
 
-## Repository Structure
+Implemented in `training_scripts_and notebooks/3dnumpy_array_data_prep.ipynb`:
+
+- Scale inputs and target separately (`feature_scaler.gz`, `target_scaler.gz`)
+- Build sliding windows with:
+  - Lookback = 48 hours
+  - Lead time = 6 hours ahead
+- Export arrays for training:
+  - `X_sequences.npy`
+  - `y_targets.npy`
+
+Notebook logs indicate sequence tensor shape around `(134662, 48, 13)`.
+
+### Step 3: Train two-stage deep models
+
+Primary training notebook: `training_scripts_and notebooks/two_staged_cnn_lstm.ipynb`
+
+- Stage 1 (classifier): CNN + LSTM + attention -> sigmoid output
+- Stage 2 (regressor): CNN + LSTM + attention -> linear output
+- Chronological splits are used (time-aware training/validation/test)
+- Class weighting is applied in Stage 1 to address imbalance
+- Saved checkpoints:
+  - `stage1_classifier.keras`
+  - `stage2_regressor.keras`
+
+Alternative architecture notebook: `training_scripts_and notebooks/Temporial_fusion_transfer.ipynb`
+
+- Two-stage Temporal Fusion Transformer (TFT-like) implementation
+- Keras-layer-safe custom blocks (GRN, VSN, transformer blocks)
+- Saved classifier artifact:
+  - `tft_stage1_classifier.keras`
+
+### Step 4: Repair/export models for serving
+
+You handled real-world serialization compatibility issues and deployment conversion:
+
+- `cleaner.py` removes problematic `quantization_config` entries from `.keras` archives recursively
+- `training_scripts_and notebooks/repairing_layers.ipynb` reloads custom-layer models and exports TensorFlow SavedModel folders:
+  - `cnn_s1_saved/`
+  - `tft_s1_saved/`
+  - `cnn_s2_saved/`
+
+This is an important production step: it decouples serving from fragile notebook-only custom-object loading behavior.
+
+### Step 5: Serve predictions through API
+
+Core serving logic in `live_inference.py` and API wrapper in `app.py`.
+
+Inference flow:
+
+1. Load `target_scaler.gz`
+2. Load three SavedModel endpoints
+3. Get Stage 1 probabilities from CNN and TFT classifiers
+4. Ensemble with fixed weights:
+   - `0.10 * CNN + 0.90 * TFT`
+5. If ensemble probability > 0.5:
+   - Run Stage 2 regressor
+   - Clip scaled output to `[0, 1]`
+   - Inverse-scale to mm/hr
+6. Return status, probability, and predicted amount
+
+## Current API Behavior
+
+`app.py` exposes:
+
+- `GET /` -> health/info message
+- `GET /predict/demo-storm` -> runs `predict_rain(...)` on preloaded `demo_storm_data.npy`
+
+Important details:
+
+- CORS is open (`allow_origins=['*']`) for frontend integration
+- API response returns a simple JSON payload with forecast status and amount
+- This repository currently demonstrates inference with fixed demo input; user-upload/live stream endpoint is not yet implemented
+
+## Repository File Guide
+
+- `app.py`: FastAPI application and endpoints
+- `live_inference.py`: model loading, ensembling, and two-stage prediction logic
+- `cleaner.py`: `.keras` sanitizer for problematic config keys
+- `upload.py`: Hugging Face Space upload helper for SavedModel folders
+- `Dockerfile`: containerized API runtime setup
+- `requirements.txt`: Python dependencies for serving
+- `demo_storm_data.npy`: sample 48-hour feature tensor used by demo endpoint
+- `feature_scaler.gz`: saved feature scaler from sequence-prep workflow
+- `target_scaler.gz`: target scaler used for inverse transform in inference
+- `stage1_classifier.keras`: Stage 1 CNN-LSTM classifier checkpoint
+- `tft_stage1_classifier.keras`: Stage 1 TFT classifier checkpoint
+- `stage2_regressor.keras`: Stage 2 regressor checkpoint
+- `cnn_s1_saved/`, `tft_s1_saved/`, `cnn_s2_saved/`: serving-ready SavedModel exports
+- `Data_preprocessing_eda/`: raw/processed source CSV assets for preprocessing and analysis
+- `training_scripts_and notebooks/`: end-to-end notebook development history (EDA, prep, training, repair)
+
+## Notebook Roles (What Each One Was Used For)
+
+- `creating_data.ipynb`: parse and merge NASA + NGL data, build cleaned master dataset
+- `EDA_Notebook.ipynb`: exploratory analysis, climatology, rain imbalance and predictor behavior checks
+- `3dnumpy_array_data_prep.ipynb`: scale, sequence, and export model-ready tensors
+- `two_staged_cnn_lstm.ipynb`: train/evaluate two-stage CNN-LSTM pipeline
+- `Temporial_fusion_transfer.ipynb`: train/evaluate two-stage TFT-based alternative
+- `repairing_layers.ipynb`: custom-layer reload and SavedModel export for deployment
+
+## How To Run The API Locally
+
+### Option 1: direct Python
+
+```bash
+pip install -r requirements.txt
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+### Option 2: Docker
+
+```bash
+docker build -t gnss-weather-api .
+docker run -p 8000:8000 gnss-weather-api
+```
+
+Then call:
+
+- `http://localhost:8000/`
+- `http://localhost:8000/predict/demo-storm`
+
+## Technical Decisions That Stand Out In This Project
+
+1. You used GNSS moisture proxies (ZTD, PWV) as first-class predictors, not just standard weather variables.
+2. You engineered a two-stage architecture that separates detection from intensity estimation.
+3. You enforced time-aware splits and sequence-based supervision for realistic forecasting.
+4. You solved Keras/TensorFlow portability issues through sanitization and SavedModel exports.
+5. You wrapped the trained stack into an API-ready deployment structure.
+
+## Known Practical Constraints
+
+1. Current API endpoint uses a fixed demo tensor, so real-time ingestion is not yet part of this codebase.
+2. `feature_scaler.gz` exists but is not used inside `live_inference.py`, which implies inference input is expected to be pre-scaled upstream.
+3. TFT Stage 2 regressor artifact is not included in root serving flow; current deployed stack uses CNN Stage 2.
+
+## Summary
+
+This project demonstrates a complete applied ML lifecycle for GNSS-informed rainfall forecasting:
+
+- raw geophysical data engineering,
+- long-horizon temporal feature construction,
+- two-stage deep learning design,
+- serialization/compatibility hardening,
+- and API-level deployment.
+
+It is a strong implementation of moving from research notebooks to a serving-capable weather prediction system.

@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 import uvicorn
 
@@ -8,31 +7,23 @@ from live_inference import predict_rain
 
 app = FastAPI(title="GNSS Weather Prediction API")
 
-# CRITICAL: Allow Netlify to communicate with this API
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # Allows any frontend to call this API
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Load your pre-saved demo data when the server boots up
-STORM_DATA = np.load("demo_storm_data.npy")
+# Load the real storm data you just extracted from Colab
+STORM_DATA = np.load("demo_scenarios.npy")
 
 @app.get("/")
 def home():
-    return {"message": "GNSS Weather API is running and ready for predictions."}
+    return {"message": "GNSS Weather API is running."}
 
 @app.get("/predict/demo-storm")
 def predict_demo_storm():
-    """Endpoint triggered by your Netlify dashboard"""
+    """Simple GET endpoint to prove the model predicts rain"""
     try:
-        # Pass the historical data into the AI
+        # Feed the real (1, 48, 13) storm data to the model
         forecast = predict_rain(STORM_DATA)
         return {"status": "success", "data": forecast}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Hugging Face requires port 7860
+    uvicorn.run(app, host="0.0.0.0", port=7860)
