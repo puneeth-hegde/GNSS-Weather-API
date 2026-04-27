@@ -16,7 +16,7 @@ The demo endpoint uses a pre-scaled dry-period tensor. The CLEAR response with a
 
 ## What This Project Is
 
-This repository is an end-to-end rainfall forecasting pipeline for IISC Bangalore. It uses GNSS-derived atmospheric signals (Zenith Total Delay and Precipitable Water Vapor from the IISC GPS station) combined with standard meteorological variables from NASA to predict whether it will rain and how much, 6 hours in advance.
+This repository is an end-to-end rainfall forecasting pipeline. It uses GNSS-derived atmospheric signals (Zenith Total Delay and Precipitable Water Vapor from the IISC GPS station) combined with standard meteorological variables from NASA to predict whether it will rain and how much, 6 hours in advance.
 
 The project covers the entire lifecycle from raw data ingestion to a live REST API:
 
